@@ -128,6 +128,7 @@ export default function CustomerDetailsScreen() {
                   key={sale.id}
                   sale={sale}
                   customer={customer}
+                  primaryLabel="saleType"
                   onEdit={() => router.push({ pathname: '/add-sale', params: { saleId: sale.id } })}
                   onDelete={() => deleteSale(sale.id)}
                 />

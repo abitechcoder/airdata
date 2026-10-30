@@ -287,18 +287,27 @@ export function CustomerRow({
 export function SaleRow({
   sale,
   customer,
+  primaryLabel = 'customer',
   onPress,
   onEdit,
   onDelete,
 }: {
   sale: Sale;
   customer?: Customer;
+  primaryLabel?: 'customer' | 'saleType';
   onPress?: () => void;
   onEdit: () => void;
   onDelete: () => Promise<void>;
 }) {
   const colors = useColors();
   const data = sale.type === 'data';
+  const saleLabel = data ? 'Data' : 'Airtime';
+  const title = primaryLabel === 'saleType' ? saleLabel : customer?.name ?? 'Unknown customer';
+  const subtitle =
+    primaryLabel === 'saleType'
+      ? `${sale.network} · ${formatSaleDate(sale.createdAt)}`
+      : `${sale.network} · ${data ? sale.dataPlan || 'Data' : 'Airtime'} · ${formatSaleDate(sale.createdAt)}`;
+  const accessibleLabel = primaryLabel === 'saleType' ? saleLabel : customer?.name ?? 'Customer';
   const content = (
     <>
       <View style={[styles.saleIcon, { backgroundColor: data ? colors.accent : colors.secondary }]}>
@@ -306,10 +315,10 @@ export function SaleRow({
       </View>
       <View style={styles.rowCopy}>
         <Text numberOfLines={1} style={[styles.rowTitle, { color: colors.foreground }]}>
-          {customer?.name ?? 'Unknown customer'}
+          {title}
         </Text>
         <Text numberOfLines={1} style={[styles.rowSubtitle, { color: colors.mutedForeground }]}>
-          {sale.network} · {data ? sale.dataPlan || 'Data' : 'Airtime'} · {formatSaleDate(sale.createdAt)}
+          {subtitle}
         </Text>
       </View>
       <Text style={[styles.rowAmount, { color: colors.foreground }]}>{formatMoney(sale.amount)}</Text>
@@ -320,7 +329,7 @@ export function SaleRow({
       {onPress ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${customer?.name ?? 'Customer'} sale details`}
+          accessibilityLabel={`${accessibleLabel} sale details`}
           onPress={onPress}
           style={({ pressed }) => [styles.saleMain, { opacity: pressed ? 0.72 : 1 }]}
         >
@@ -331,7 +340,7 @@ export function SaleRow({
       )}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Options for ${customer?.name ?? 'customer'} sale`}
+        accessibilityLabel={`Options for ${accessibleLabel.toLowerCase()} sale`}
         testID={`sale-actions-${sale.id}`}
         onPress={() =>
           Alert.alert('Sale options', 'Choose what you want to do with this sale.', [
