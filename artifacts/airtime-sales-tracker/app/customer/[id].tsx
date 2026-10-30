@@ -11,7 +11,7 @@ export default function CustomerDetailsScreen() {
   const colors = useColors();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { customers, sales, ready, loadError, retryLoad } = useAppData();
+  const { customers, sales, deleteSale, ready, loadError, retryLoad } = useAppData();
   const customer = customers.find((item) => item.id === id);
   const customerSales = sales.filter((sale) => sale.customerId === id);
 
@@ -64,7 +64,13 @@ export default function CustomerDetailsScreen() {
         {customerSales.length ? (
           <View style={styles.list}>
             {customerSales.map((sale) => (
-              <SaleRow key={sale.id} sale={sale} customer={customer} onPress={() => {}} />
+              <SaleRow
+                key={sale.id}
+                sale={sale}
+                customer={customer}
+                onEdit={() => router.push({ pathname: '/add-sale', params: { saleId: sale.id } })}
+                onDelete={() => deleteSale(sale.id)}
+              />
             ))}
           </View>
         ) : (

@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import React, { PropsWithChildren, ReactNode } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -287,10 +288,14 @@ export function SaleRow({
   sale,
   customer,
   onPress,
+  onEdit,
+  onDelete,
 }: {
   sale: Sale;
   customer?: Customer;
   onPress?: () => void;
+  onEdit: () => void;
+  onDelete: () => Promise<void>;
 }) {
   const colors = useColors();
   const data = sale.type === 'data';
@@ -310,24 +315,62 @@ export function SaleRow({
       <Text style={[styles.rowAmount, { color: colors.foreground }]}>{formatMoney(sale.amount)}</Text>
     </>
   );
-  if (!onPress) {
-    return (
-      <View style={[styles.listRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        {content}
-      </View>
-    );
-  }
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.listRow,
-        { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.72 : 1 },
-      ]}
-    >
-      {content}
-    </Pressable>
+    <View style={[styles.listRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      {onPress ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${customer?.name ?? 'Customer'} sale details`}
+          onPress={onPress}
+          style={({ pressed }) => [styles.saleMain, { opacity: pressed ? 0.72 : 1 }]}
+        >
+          {content}
+        </Pressable>
+      ) : (
+        <View style={styles.saleMain}>{content}</View>
+      )}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Options for ${customer?.name ?? 'customer'} sale`}
+        testID={`sale-actions-${sale.id}`}
+        onPress={() =>
+          Alert.alert('Sale options', 'Choose what you want to do with this sale.', [
+            { text: 'Edit sale', onPress: onEdit },
+            {
+              text: 'Remove sale',
+              style: 'destructive',
+              onPress: () =>
+                Alert.alert(
+                  'Remove this sale?',
+                  'It will be removed from this device, and sales totals will be updated.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Remove sale',
+                      style: 'destructive',
+                      onPress: () => {
+                        void onDelete().catch(() => {
+                          Alert.alert(
+                            'Sale not removed',
+                            'This sale could not be removed. Please try again.',
+                          );
+                        });
+                      },
+                    },
+                  ],
+                ),
+            },
+            { text: 'Cancel', style: 'cancel' },
+          ])
+        }
+        style={({ pressed }) => [
+          styles.saleAction,
+          { backgroundColor: colors.secondary, opacity: pressed ? 0.7 : 1 },
+        ]}
+      >
+        <Feather name="more-horizontal" size={19} color={colors.secondaryForeground} />
+      </Pressable>
+    </View>
   );
 }
 
@@ -388,6 +431,8 @@ const styles = StyleSheet.create({
   emptyTitle: { fontFamily: 'Inter_700Bold', fontSize: 16 },
   emptyDescription: { fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 19, textAlign: 'center' },
   listRow: { minHeight: 76, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 18, paddingHorizontal: 12, paddingVertical: 12, gap: 12 },
+  saleMain: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  saleAction: { height: 38, width: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   avatar: { width: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontFamily: 'Inter_700Bold', fontSize: 16 },
   saleIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },

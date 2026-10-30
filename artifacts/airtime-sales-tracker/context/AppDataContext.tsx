@@ -44,6 +44,11 @@ interface AppDataContextValue extends Store {
   addSale: (
     input: Omit<Sale, 'id' | 'createdAt'>,
   ) => Promise<Sale>;
+  updateSale: (
+    id: string,
+    input: Omit<Sale, 'id' | 'createdAt'>,
+  ) => Promise<Sale>;
+  deleteSale: (id: string) => Promise<void>;
 }
 
 const STORAGE_KEY = '@airtime-sales-tracker/data-v1';
@@ -153,6 +158,45 @@ export function AppDataProvider({ children }: PropsWithChildren) {
     [commit],
   );
 
+  const updateSale = useCallback(
+    async (id: string, input: Omit<Sale, 'id' | 'createdAt'>) => {
+      let updatedSale: Sale | null = null;
+      await commit((current) => {
+        const existingSale = current.sales.find((sale) => sale.id === id);
+        if (!existingSale) {
+          throw new Error('This sale could not be found.');
+        }
+        updatedSale = { ...existingSale, ...input };
+        return {
+          ...current,
+          sales: current.sales.map((sale) =>
+            sale.id === id ? updatedSale! : sale,
+          ),
+        };
+      });
+      if (!updatedSale) {
+        throw new Error('This sale could not be updated.');
+      }
+      return updatedSale;
+    },
+    [commit],
+  );
+
+  const deleteSale = useCallback(
+    async (id: string) => {
+      await commit((current) => {
+        if (!current.sales.some((sale) => sale.id === id)) {
+          throw new Error('This sale could not be found.');
+        }
+        return {
+          ...current,
+          sales: current.sales.filter((sale) => sale.id !== id),
+        };
+      });
+    },
+    [commit],
+  );
+
   const value = useMemo(
     () => ({
       ...store,
@@ -162,8 +206,10 @@ export function AppDataProvider({ children }: PropsWithChildren) {
       retryLoad: () => setLoadAttempt((attempt) => attempt + 1),
       addCustomer,
       addSale,
+      updateSale,
+      deleteSale,
     }),
-    [store, ready, loadError, persistenceError, addCustomer, addSale],
+    [store, ready, loadError, persistenceError, addCustomer, addSale, updateSale, deleteSale],
   );
 
   return (

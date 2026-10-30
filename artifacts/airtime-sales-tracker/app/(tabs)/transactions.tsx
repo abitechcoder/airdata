@@ -11,7 +11,7 @@ type Filter = 'all' | SaleType;
 export default function TransactionsScreen() {
   const colors = useColors();
   const router = useRouter();
-  const { customers, sales, ready, loadError, retryLoad } = useAppData();
+  const { customers, sales, deleteSale, ready, loadError, retryLoad } = useAppData();
   const [filter, setFilter] = useState<Filter>('all');
   const filtered = useMemo(
     () => sales.filter((sale) => filter === 'all' || sale.type === filter),
@@ -50,6 +50,8 @@ export default function TransactionsScreen() {
               sale={sale}
               customer={customers.find((customer) => customer.id === sale.customerId)}
               onPress={() => router.push({ pathname: '/customer/[id]', params: { id: sale.customerId } })}
+              onEdit={() => router.push({ pathname: '/add-sale', params: { saleId: sale.id } })}
+              onDelete={() => deleteSale(sale.id)}
             />
           ))}
         </View>

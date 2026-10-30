@@ -10,7 +10,7 @@ import { useColors } from '@/hooks/useColors';
 export default function OverviewScreen() {
   const colors = useColors();
   const router = useRouter();
-  const { customers, sales, ready, loadError, retryLoad } = useAppData();
+  const { customers, sales, deleteSale, ready, loadError, retryLoad } = useAppData();
   const todaySales = sales.filter((sale) => isToday(sale.createdAt));
   const recentSales = sales.slice(0, 4);
 
@@ -91,6 +91,8 @@ export default function OverviewScreen() {
                 sale={sale}
                 customer={customers.find((customer) => customer.id === sale.customerId)}
                 onPress={() => router.push({ pathname: '/customer/[id]', params: { id: sale.customerId } })}
+                onEdit={() => router.push({ pathname: '/add-sale', params: { saleId: sale.id } })}
+                onDelete={() => deleteSale(sale.id)}
               />
             ))}
           </View>

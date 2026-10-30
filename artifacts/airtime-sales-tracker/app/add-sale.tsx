@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ActionButton, AppPage, BackButton, ChoicePill, Field, Notice, SectionHeading, uiStyles } from '@/components/AppUI';
 import { Network, SaleType, useAppData } from '@/context/AppDataContext';
@@ -11,8 +11,10 @@ const networks: Network[] = ['MTN', 'Airtel', 'Glo', '9mobile'];
 export default function AddSaleScreen() {
   const colors = useColors();
   const router = useRouter();
-  const params = useLocalSearchParams<{ customerId?: string }>();
-  const { customers, addCustomer, addSale, ready, loadError, retryLoad, persistenceError } = useAppData();
+  const params = useLocalSearchParams<{ customerId?: string; saleId?: string }>();
+  const { customers, sales, addCustomer, addSale, updateSale, ready, loadError, retryLoad, persistenceError } = useAppData();
+  const editingSale = params.saleId ? sales.find((sale) => sale.id === params.saleId) : undefined;
+  const isEditing = Boolean(params.saleId);
   const [saleType, setSaleType] = useState<SaleType>('airtime');
   const [network, setNetwork] = useState<Network>('MTN');
   const [amount, setAmount] = useState('');
@@ -24,6 +26,18 @@ export default function AddSaleScreen() {
   const [newPhone, setNewPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [initializedSaleId, setInitializedSaleId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!ready || !editingSale || initializedSaleId === editingSale.id) return;
+    setSaleType(editingSale.type);
+    setNetwork(editingSale.network);
+    setAmount(String(editingSale.amount));
+    setDataPlan(editingSale.dataPlan);
+    setCustomerId(editingSale.customerId);
+    setInitializedSaleId(editingSale.id);
+  }, [ready, editingSale, initializedSaleId]);
+
   const matchedCustomers = useMemo(() => {
     const query = customerSearch.trim().toLowerCase();
     return customers.filter((customer) =>
@@ -67,25 +81,33 @@ export default function AddSaleScreen() {
     setError('');
     setSaving(true);
     try {
-      await addSale({
+      const saleInput = {
         customerId,
         type: saleType,
         network,
         amount: numericAmount,
         dataPlan: saleType === 'data' ? dataPlan.trim() : '',
-      });
+      };
+      if (isEditing && params.saleId) {
+        await updateSale(params.saleId, saleInput);
+      } else {
+        await addSale(saleInput);
+      }
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace('/(tabs)/transactions');
     } catch {
-      Alert.alert('Sale not saved', 'Your device could not save this sale. Please try again.');
+      Alert.alert(
+        isEditing ? 'Changes not saved' : 'Sale not saved',
+        'Your device could not save this sale. Please try again.',
+      );
     } finally {
       setSaving(false);
     }
   };
 
-  if (!ready) {
+  if (!ready || (isEditing && editingSale && initializedSaleId !== editingSale.id)) {
     return (
-      <AppPage title={loadError ? 'Unable to open records' : 'Opening sale form'}>
+      <AppPage title={loadError ? 'Unable to open records' : isEditing ? 'Opening sale' : 'Opening sale form'}>
         {loadError ? (
           <ActionButton title="Try again" icon="refresh-cw" onPress={retryLoad} />
         ) : (
@@ -95,11 +117,19 @@ export default function AddSaleScreen() {
     );
   }
 
+  if (isEditing && !editingSale) {
+    return (
+      <AppPage title="Sale not found">
+        <ActionButton title="View sales" icon="arrow-left" onPress={() => router.replace('/(tabs)/transactions')} secondary />
+      </AppPage>
+    );
+  }
+
   return (
     <AppPage
-      eyebrow="NEW TRANSACTION"
-      title="Record a sale"
-      subtitle="Add a customer and sale details."
+      eyebrow={isEditing ? 'EDIT TRANSACTION' : 'NEW TRANSACTION'}
+      title={isEditing ? 'Edit sale' : 'Record a sale'}
+      subtitle={isEditing ? 'Correct the sale details.' : 'Add a customer and sale details.'}
       keyboardAware
       action={<BackButton onPress={() => router.back()} />}
     >
@@ -186,7 +216,13 @@ export default function AddSaleScreen() {
         ) : null}
         {error ? <Text style={[uiStyles.errorText, { color: colors.destructive }]}>{error}</Text> : null}
         {persistenceError ? <Notice>{persistenceError}</Notice> : null}
-        <ActionButton title="Save sale" icon="check" onPress={saveSale} loading={saving} testID="save-sale-button" />
+        <ActionButton
+          title={isEditing ? 'Save changes' : 'Save sale'}
+          icon="check"
+          onPress={saveSale}
+          loading={saving}
+          testID={isEditing ? 'save-sale-changes-button' : 'save-sale-button'}
+        />
       </View>
     </AppPage>
   );
