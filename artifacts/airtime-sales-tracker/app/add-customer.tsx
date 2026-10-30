@@ -11,7 +11,6 @@ export default function AddCustomerScreen() {
   const router = useRouter();
   const { addCustomer, ready, loadError, retryLoad, persistenceError } = useAppData();
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -24,7 +23,7 @@ export default function AddCustomerScreen() {
     setError('');
     setSaving(true);
     try {
-      await addCustomer({ name, phone });
+      await addCustomer({ name, phone: '' });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (router.canGoBack()) router.back();
       else router.replace('/(tabs)/customers');
@@ -51,14 +50,14 @@ export default function AddCustomerScreen() {
     <AppPage
       eyebrow="CUSTOMER LIST"
       title="Add a customer"
-      subtitle="Keep their contact details with their sales."
+      subtitle="Add a customer to start tracking their sales."
       keyboardAware
       action={<BackButton onPress={() => router.back()} />}
     >
       <View style={styles.form}>
         <View style={[styles.intro, { backgroundColor: colors.secondary }]}>
           <Text style={[styles.introTitle, { color: colors.secondaryForeground }]}>A name is all you need</Text>
-          <Text style={[styles.introText, { color: colors.mutedForeground }]}>You can add a phone number now or leave it blank.</Text>
+          <Text style={[styles.introText, { color: colors.mutedForeground }]}>Add a name to keep their sales organized.</Text>
         </View>
         <Field
           label="Customer name"
@@ -68,15 +67,6 @@ export default function AddCustomerScreen() {
           autoCapitalize="words"
           returnKeyType="next"
           testID="customer-name-input"
-        />
-        <Field
-          label="Phone number"
-          value={phone}
-          onChangeText={setPhone}
-          placeholder="e.g. 0801 234 5678"
-          keyboardType="phone-pad"
-          autoComplete="tel"
-          testID="customer-phone-input"
         />
         {error ? <Text style={[uiStyles.errorText, { color: colors.destructive }]}>{error}</Text> : null}
         {persistenceError ? <Notice>{persistenceError}</Notice> : null}
