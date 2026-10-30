@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/"
+title = "Airtime & Data Tracker"
+description = "A mobile sales tracker for airtime and data vendors. Add customers, record airtime or data sales, review every transaction, and see each customer's complete purchase history."
+version = "1.0.0"
+id = "artifacts/airtime-sales-tracker"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/" ]
+localPort = 25922
+
+[services.development]
+run = "pnpm --filter @workspace/airtime-sales-tracker run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/airtime-sales-tracker", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/airtime-sales-tracker", "run", "serve" ]
+
+[services.env]
+PORT = "25922"
+BASE_PATH = "/"
